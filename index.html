@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mood Meter</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: #1a1a2e;
+    color: #e0e0e0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+  }
+
+  h1 {
+    font-size: 2rem;
+    margin-bottom: 20px;
+    color: #f5f5f5;
+  }
+
+  .meter-container {
+    position: relative;
+    width: 500px;
+    height: 500px;
+    max-width: 90vw;
+    max-height: 90vw;
+    background-image: url('mood-meter.png');
+    background-size: cover;
+    background-position: center;
+    background-color: #2a2a4a;
+    border: 2px solid #444;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .meter-container .placeholder-text {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: #888;
+    font-size: 0.9rem;
+    padding: 20px;
+    pointer-events: none;
+  }
+
+  .point {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .point .dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    flex-shrink: 0;
+  }
+
+  .point .label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #fff;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.8), -1px -1px 3px rgba(0,0,0,0.8);
+    white-space: nowrap;
+  }
+
+  .form-section {
+    margin-top: 20px;
+    background: #16213e;
+    padding: 20px;
+    border-radius: 8px;
+    width: 500px;
+    max-width: 90vw;
+  }
+
+  .form-section h2 {
+    font-size: 1.1rem;
+    margin-bottom: 12px;
+    color: #ccc;
+  }
+
+  .input-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+  }
+
+  .input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+    min-width: 80px;
+  }
+
+  .input-group label {
+    font-size: 0.8rem;
+    color: #aaa;
+  }
+
+  .input-group input {
+    padding: 8px 10px;
+    border: 1px solid #444;
+    border-radius: 4px;
+    background: #0f3460;
+    color: #e0e0e0;
+    font-size: 0.9rem;
+  }
+
+  .input-group input:focus {
+    outline: none;
+    border-color: #e94560;
+  }
+
+  button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: opacity 0.2s;
+  }
+
+  button:hover { opacity: 0.85; }
+
+  .btn-submit {
+    background: #e94560;
+    color: #fff;
+    align-self: flex-end;
+  }
+
+  .btn-clear {
+    background: #444;
+    color: #ccc;
+    margin-top: 12px;
+  }
+
+  .entries-section {
+    margin-top: 16px;
+    width: 500px;
+    max-width: 90vw;
+  }
+
+  .entries-section h2 {
+    font-size: 1.1rem;
+    margin-bottom: 8px;
+    color: #ccc;
+  }
+
+  .entries-list {
+    list-style: none;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  .entries-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 10px;
+    border-bottom: 1px solid #2a2a4a;
+    font-size: 0.85rem;
+  }
+
+  .entries-list li .entry-color {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 8px;
+    flex-shrink: 0;
+  }
+
+  .entries-list li .entry-info {
+    display: flex;
+    align-items: center;
+  }
+
+  .entries-list li .entry-coords {
+    color: #888;
+  }
+
+  .no-entries {
+    color: #666;
+    font-size: 0.85rem;
+    padding: 6px 0;
+  }
+</style>
+</head>
+<body>
+
+<h1>Mood Meter</h1>
+
+<div class="meter-container" id="meter">
+  <span class="placeholder-text" id="placeholder">
+    Add mood-meter.png to this directory to set the background image
+  </span>
+</div>
+
+<div class="form-section">
+  <h2>Plot Your Mood</h2>
+  <form id="mood-form">
+    <div class="input-row">
+      <div class="input-group" style="flex:2;">
+        <label for="name-input">Name</label>
+        <input type="text" id="name-input" required placeholder="Your name">
+      </div>
+      <div class="input-group">
+        <label for="x-input">X (-10 to 10)</label>
+        <input type="number" id="x-input" required min="-10" max="10" step="0.1" placeholder="0">
+      </div>
+      <div class="input-group">
+        <label for="y-input">Y (-10 to 10)</label>
+        <input type="number" id="y-input" required min="-10" max="10" step="0.1" placeholder="0">
+      </div>
+      <button type="submit" class="btn-submit">Plot</button>
+    </div>
+  </form>
+</div>
+
+<div class="entries-section">
+  <h2>Entries</h2>
+  <ul class="entries-list" id="entries-list"></ul>
+  <p class="no-entries" id="no-entries">No entries yet.</p>
+  <button class="btn-clear" id="clear-btn" style="display:none;">Clear All</button>
+</div>
+
+<script>
+  const STORAGE_KEY = 'mood-meter-entries';
+  const meter = document.getElementById('meter');
+  const placeholder = document.getElementById('placeholder');
+  const form = document.getElementById('mood-form');
+  const nameInput = document.getElementById('name-input');
+  const xInput = document.getElementById('x-input');
+  const yInput = document.getElementById('y-input');
+  const entriesList = document.getElementById('entries-list');
+  const noEntries = document.getElementById('no-entries');
+  const clearBtn = document.getElementById('clear-btn');
+
+  function getEntries() {
+    try {
+      return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+    } catch {
+      return [];
+    }
+  }
+
+  function saveEntries(entries) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  }
+
+  // Generate a consistent color from a name string
+  function nameToColor(name) {
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+      hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const h = ((hash % 360) + 360) % 360;
+    return `hsl(${h}, 70%, 55%)`;
+  }
+
+  // Convert x (-10..10) to percentage left, y (-10..10) to percentage top
+  function coordToPercent(x, y) {
+    const left = ((x + 10) / 20) * 100;
+    const top = ((10 - y) / 20) * 100; // invert y so positive is up
+    return { left, top };
+  }
+
+  function renderPoints() {
+    // Remove existing points
+    meter.querySelectorAll('.point').forEach(el => el.remove());
+
+    const entries = getEntries();
+    entries.forEach(entry => {
+      const { left, top } = coordToPercent(entry.x, entry.y);
+      const color = nameToColor(entry.name);
+
+      const point = document.createElement('div');
+      point.className = 'point';
+      point.style.left = `${left}%`;
+      point.style.top = `${top}%`;
+      point.innerHTML = `<span class="dot" style="background:${color};"></span><span class="label">${escapeHtml(entry.name)}</span>`;
+      meter.appendChild(point);
+    });
+  }
+
+  function renderList() {
+    const entries = getEntries();
+    entriesList.innerHTML = '';
+
+    if (entries.length === 0) {
+      noEntries.style.display = '';
+      clearBtn.style.display = 'none';
+      return;
+    }
+
+    noEntries.style.display = 'none';
+    clearBtn.style.display = '';
+
+    entries.forEach(entry => {
+      const li = document.createElement('li');
+      const color = nameToColor(entry.name);
+      li.innerHTML = `
+        <span class="entry-info">
+          <span class="entry-color" style="background:${color};"></span>
+          ${escapeHtml(entry.name)}
+        </span>
+        <span class="entry-coords">(${entry.x}, ${entry.y})</span>`;
+      entriesList.appendChild(li);
+    });
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function render() {
+    renderPoints();
+    renderList();
+    // Hide placeholder if background image loads
+    const img = new Image();
+    img.onload = () => { placeholder.style.display = 'none'; };
+    img.src = 'mood-meter.png';
+  }
+
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    const name = nameInput.value.trim();
+    const x = parseFloat(xInput.value);
+    const y = parseFloat(yInput.value);
+
+    if (!name) return;
+    if (isNaN(x) || x < -10 || x > 10) return;
+    if (isNaN(y) || y < -10 || y > 10) return;
+
+    const entries = getEntries();
+    entries.push({ name, x, y });
+    saveEntries(entries);
+
+    nameInput.value = '';
+    xInput.value = '';
+    yInput.value = '';
+    nameInput.focus();
+
+    render();
+  });
+
+  clearBtn.addEventListener('click', () => {
+    localStorage.removeItem(STORAGE_KEY);
+    render();
+  });
+
+  // Initial render
+  render();
+</script>
+
+</body>
+</html>

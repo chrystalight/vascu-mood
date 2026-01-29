@@ -481,16 +481,16 @@
       meter.appendChild(point);
     });
 
-    // Render entries list
+    // Render entries list (same filter as meter)
     entriesList.innerHTML = '';
-    if (entries.length === 0) {
+    if (meterEntries.length === 0) {
       noEntries.style.display = '';
       clearBtn.style.display = 'none';
       return;
     }
     noEntries.style.display = 'none';
     clearBtn.style.display = '';
-    entries.forEach(entry => {
+    meterEntries.forEach(entry => {
       const li = document.createElement('li');
       const color = entry.color || nameToColor(entry.name);
       li.innerHTML = `

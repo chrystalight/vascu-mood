@@ -245,6 +245,20 @@
     height: 36px;
     cursor: pointer;
   }
+
+  .meter-filter {
+    font-size: 0.75rem;
+    color: #666;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 6px;
+    align-self: flex-end;
+  }
+  .meter-filter input {
+    cursor: pointer;
+  }
 </style>
 </head>
 <body>
@@ -256,6 +270,7 @@
     Add mood-meter.png to this directory to set the background image
   </span>
 </div>
+<label class="meter-filter"><input type="checkbox" id="hide-guests"> Yapstoners only</label>
 
 <div class="form-section">
   <h2>Plot Your Mood <span class="guest-toggle" id="guest-toggle">guest mode</span></h2>
@@ -310,7 +325,7 @@
   // =====================================================
 
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
-  import { getDatabase, ref, push, onValue, remove } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js';
+  import { getDatabase, ref, push, set, onValue, remove } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js';
 
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
@@ -323,6 +338,7 @@
     'cf51': { name: 'Connor', color: '#f7b731' },
     'mk73': { name: 'Mattie', color: '#a55eea' },
   };
+  const YAPSTONER_NAMES = new Set(Object.values(YAPSTONERS).map(y => y.name));
 
   const meter = document.getElementById('meter');
   const placeholder = document.getElementById('placeholder');
@@ -340,8 +356,11 @@
   const entriesList = document.getElementById('entries-list');
   const noEntries = document.getElementById('no-entries');
   const clearBtn = document.getElementById('clear-btn');
+  const hideGuestsCheckbox = document.getElementById('hide-guests');
 
   let guestMode = false;
+  let hideGuests = false;
+  let currentEntries = [];
 
   // Generate a consistent hex color from a name string
   function nameToColor(name) {
@@ -385,9 +404,12 @@
     const oldSvg = meter.querySelector('svg.lines-overlay');
     if (oldSvg) oldSvg.remove();
 
-    // Group entries by name (preserving insertion order)
+    // Filter entries for the meter view
+    const meterEntries = hideGuests ? entries.filter(e => YAPSTONER_NAMES.has(e.name)) : entries;
+
+    // Group meter entries by name (preserving insertion order)
     const groups = new Map();
-    entries.forEach(entry => {
+    meterEntries.forEach(entry => {
       if (!groups.has(entry.name)) groups.set(entry.name, []);
       groups.get(entry.name).push(entry);
     });
@@ -454,8 +476,10 @@
   // Listen for real-time updates from Firebase
   onValue(entriesRef, snapshot => {
     const data = snapshot.val();
-    const entries = data ? Object.values(data) : [];
-    renderAll(entries);
+    currentEntries = data
+      ? Object.entries(data).map(([key, val]) => ({ ...val, _key: key }))
+      : [];
+    renderAll(currentEntries);
   });
 
   // Guest mode toggle
@@ -475,11 +499,13 @@
     if (isNaN(x) || x < -10 || x > 10) return;
     if (isNaN(y) || y < -10 || y > 10) return;
 
+    const today = new Date().toISOString().slice(0, 10);
     let name, color;
     if (guestMode) {
       name = nameInput.value.trim();
       color = colorInput.value;
       if (!name) return;
+      push(entriesRef, { name, x, y, color, date: today });
     } else {
       const id = idInput.value.trim();
       const yapper = YAPSTONERS[id];
@@ -490,9 +516,14 @@
       }
       name = yapper.name;
       color = yapper.color;
+      // Override same-day entry for this Yapstoner
+      const existing = currentEntries.find(e => e.name === name && e.date === today);
+      if (existing) {
+        set(ref(db, 'entries/' + existing._key), { name, x, y, color, date: today });
+      } else {
+        push(entriesRef, { name, x, y, color, date: today });
+      }
     }
-
-    push(entriesRef, { name, x, y, color });
 
     if (guestMode) {
       nameInput.value = '';
@@ -507,6 +538,12 @@
   nameInput.addEventListener('input', () => {
     const name = nameInput.value.trim();
     if (name) colorInput.value = nameToColor(name);
+  });
+
+  // Filter toggle for meter view
+  hideGuestsCheckbox.addEventListener('change', () => {
+    hideGuests = hideGuestsCheckbox.checked;
+    renderAll(currentEntries);
   });
 
   clearBtn.addEventListener('click', () => {

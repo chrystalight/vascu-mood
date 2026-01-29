@@ -146,9 +146,38 @@
   }
 
   .btn-clear {
-    background: #444;
-    color: #ccc;
-    margin-top: 12px;
+    background: none;
+    border: none;
+    color: #222;
+    font-size: 0.6rem;
+    font-weight: normal;
+    cursor: default;
+    margin-top: 20px;
+    padding: 2px 4px;
+    opacity: 0.4;
+  }
+  .btn-clear:hover {
+    opacity: 0.7;
+    color: #444;
+  }
+
+  .guest-toggle {
+    font-size: 0.7rem;
+    color: #666;
+    cursor: pointer;
+    margin-left: 8px;
+    font-weight: normal;
+  }
+  .guest-toggle:hover {
+    color: #aaa;
+  }
+
+  .id-error {
+    color: #e94560;
+    font-size: 0.8rem;
+    margin-top: 6px;
+    display: block;
+    height: 1.2em;
   }
 
   .entries-section {
@@ -229,12 +258,16 @@
 </div>
 
 <div class="form-section">
-  <h2>Plot Your Mood</h2>
+  <h2>Plot Your Mood <span class="guest-toggle" id="guest-toggle">guest mode</span></h2>
   <form id="mood-form">
     <div class="input-row">
-      <div class="input-group" style="flex:2;">
+      <div class="input-group" style="flex:2;" id="id-group">
+        <label for="id-input">Secret ID</label>
+        <input type="password" id="id-input" placeholder="Enter your ID">
+      </div>
+      <div class="input-group" style="flex:2; display:none;" id="name-group">
         <label for="name-input">Name</label>
-        <input type="text" id="name-input" required placeholder="Your name">
+        <input type="text" id="name-input" placeholder="Your name">
       </div>
       <div class="input-group">
         <label for="x-input">X (-10 to 10)</label>
@@ -244,12 +277,13 @@
         <label for="y-input">Y (-10 to 10)</label>
         <input type="number" id="y-input" required min="-10" max="10" step="0.1" placeholder="0">
       </div>
-      <div class="input-group" style="flex:0;">
+      <div class="input-group" style="flex:0; display:none;" id="color-group">
         <label for="color-input">Color</label>
         <input type="color" id="color-input" value="#e94560">
       </div>
       <button type="submit" class="btn-submit">Plot</button>
     </div>
+    <span class="id-error" id="id-error"></span>
   </form>
 </div>
 
@@ -257,7 +291,7 @@
   <h2>Entries</h2>
   <ul class="entries-list" id="entries-list"></ul>
   <p class="no-entries" id="no-entries">No entries yet.</p>
-  <button class="btn-clear" id="clear-btn" style="display:none;">Clear All</button>
+  <button class="btn-clear" id="clear-btn" style="display:none;">clear</button>
 </div>
 
 <script type="module">
@@ -282,16 +316,32 @@
   const db = getDatabase(app);
   const entriesRef = ref(db, 'entries');
 
+  // Yapstoner secret IDs
+  const YAPSTONERS = {
+    'cq84': { name: 'Catie',  color: '#e94560' },
+    'lx29': { name: 'Lucas',  color: '#4ecdc4' },
+    'cf51': { name: 'Connor', color: '#f7b731' },
+    'mk73': { name: 'Mattie', color: '#a55eea' },
+  };
+
   const meter = document.getElementById('meter');
   const placeholder = document.getElementById('placeholder');
   const form = document.getElementById('mood-form');
+  const idInput = document.getElementById('id-input');
+  const idGroup = document.getElementById('id-group');
   const nameInput = document.getElementById('name-input');
+  const nameGroup = document.getElementById('name-group');
   const xInput = document.getElementById('x-input');
   const yInput = document.getElementById('y-input');
   const colorInput = document.getElementById('color-input');
+  const colorGroup = document.getElementById('color-group');
+  const guestToggle = document.getElementById('guest-toggle');
+  const idError = document.getElementById('id-error');
   const entriesList = document.getElementById('entries-list');
   const noEntries = document.getElementById('no-entries');
   const clearBtn = document.getElementById('clear-btn');
+
+  let guestMode = false;
 
   // Generate a consistent hex color from a name string
   function nameToColor(name) {
@@ -408,26 +458,52 @@
     renderAll(entries);
   });
 
+  // Guest mode toggle
+  guestToggle.addEventListener('click', () => {
+    guestMode = !guestMode;
+    idGroup.style.display = guestMode ? 'none' : '';
+    nameGroup.style.display = guestMode ? '' : 'none';
+    colorGroup.style.display = guestMode ? '' : 'none';
+    guestToggle.textContent = guestMode ? 'yapstoner mode' : 'guest mode';
+    idError.textContent = '';
+  });
+
   form.addEventListener('submit', e => {
     e.preventDefault();
-    const name = nameInput.value.trim();
     const x = parseFloat(xInput.value);
     const y = parseFloat(yInput.value);
-
-    if (!name) return;
     if (isNaN(x) || x < -10 || x > 10) return;
     if (isNaN(y) || y < -10 || y > 10) return;
 
-    const color = colorInput.value;
+    let name, color;
+    if (guestMode) {
+      name = nameInput.value.trim();
+      color = colorInput.value;
+      if (!name) return;
+    } else {
+      const id = idInput.value.trim();
+      const yapper = YAPSTONERS[id];
+      if (!yapper) {
+        idError.textContent = 'Invalid ID';
+        setTimeout(() => idError.textContent = '', 2000);
+        return;
+      }
+      name = yapper.name;
+      color = yapper.color;
+    }
+
     push(entriesRef, { name, x, y, color });
 
-    nameInput.value = '';
+    if (guestMode) {
+      nameInput.value = '';
+    } else {
+      idInput.value = '';
+    }
     xInput.value = '';
     yInput.value = '';
-    nameInput.focus();
   });
 
-  // Auto-set color picker from name hash when name changes
+  // Auto-set color picker from name hash when name changes (guest mode)
   nameInput.addEventListener('input', () => {
     const name = nameInput.value.trim();
     if (name) colorInput.value = nameToColor(name);

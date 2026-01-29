@@ -504,14 +504,29 @@
     return div.innerHTML;
   }
 
+  function formatDate(dateStr) {
+    if (!dateStr) return '';
+    const [y, m, d] = dateStr.split('-');
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return `${months[parseInt(m) - 1]} ${parseInt(d)}`;
+  }
+
   function renderAll(entries) {
     // Clear old points and SVG
     meter.querySelectorAll('.point').forEach(el => el.remove());
     const oldSvg = meter.querySelector('svg.lines-overlay');
     if (oldSvg) oldSvg.remove();
 
+    // Deduplicate: for same name+date, keep only the latest entry
+    const dedupMap = new Map();
+    entries.forEach(entry => {
+      const key = entry.date ? `${entry.name}|${entry.date}` : `${entry.name}|_${entry._key}`;
+      dedupMap.set(key, entry);
+    });
+    const deduped = Array.from(dedupMap.values());
+
     // Filter entries for the meter view based on selected roles
-    const meterEntries = entries.filter(e => showRoles.has(getEntryRole(e)));
+    const meterEntries = deduped.filter(e => showRoles.has(getEntryRole(e)));
 
     // Group meter entries by name (preserving insertion order)
     const groups = new Map();
@@ -533,8 +548,11 @@
       const color = prefs?.color || groupEntries[0].color || nameToColor(name);
       const shape = prefs?.shape || 'circle';
 
-      // Draw line segments for groups with 2+ entries
+      // Draw line segments only between entries from different days
       for (let i = 1; i < groupEntries.length; i++) {
+        const prevDate = groupEntries[i - 1].date;
+        const currDate = groupEntries[i].date;
+        if (!prevDate || !currDate || prevDate === currDate) continue;
         const prev = coordToPercent(groupEntries[i - 1].x, groupEntries[i - 1].y);
         const curr = coordToPercent(groupEntries[i].x, groupEntries[i].y);
         const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -568,12 +586,13 @@
       const prefs = currentPrefs[entry.name];
       const color = prefs?.color || entry.color || nameToColor(entry.name);
       const shape = prefs?.shape || 'circle';
+      const dateLabel = formatDate(entry.date);
       li.innerHTML = `
         <span class="entry-info">
           <span class="entry-color shape-${shape}" style="background:${color};"></span>
           ${escapeHtml(entry.name)}
         </span>
-        <span class="entry-coords">(${entry.x}, ${entry.y})</span>`;
+        <span class="entry-coords">(${entry.x}, ${entry.y})${dateLabel ? ' · ' + dateLabel : ''}</span>`;
       entriesList.appendChild(li);
     });
   }

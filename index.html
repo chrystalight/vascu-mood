@@ -241,8 +241,28 @@
   <button class="btn-clear" id="clear-btn" style="display:none;">Clear All</button>
 </div>
 
-<script>
-  const STORAGE_KEY = 'mood-meter-entries';
+<script type="module">
+  // =====================================================
+  // FIREBASE CONFIG — Replace these values with your own!
+  // =====================================================
+  const firebaseConfig = {
+    apiKey:            "AIzaSyBTIsbsVnWsexnB1tnhUKc0Fjh1pPvOdGg",
+    authDomain:        "vascu-mood.firebaseapp.com",
+    databaseURL:       "https://vascu-mood-default-rtdb.firebaseio.com",
+    projectId:         "vascu-mood",
+    storageBucket:     "vascu-mood.firebasestorage.app",
+    messagingSenderId: "1019950216194",
+    appId:             "1:1019950216194:web:0dd8e0b40ded267595231b"
+  };
+  // =====================================================
+
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
+  import { getDatabase, ref, push, onValue, remove } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js';
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  const entriesRef = ref(db, 'entries');
+
   const meter = document.getElementById('meter');
   const placeholder = document.getElementById('placeholder');
   const form = document.getElementById('mood-form');
@@ -252,18 +272,6 @@
   const entriesList = document.getElementById('entries-list');
   const noEntries = document.getElementById('no-entries');
   const clearBtn = document.getElementById('clear-btn');
-
-  function getEntries() {
-    try {
-      return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-    } catch {
-      return [];
-    }
-  }
-
-  function saveEntries(entries) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
-  }
 
   // Generate a consistent color from a name string
   function nameToColor(name) {
@@ -278,19 +286,22 @@
   // Convert x (-10..10) to percentage left, y (-10..10) to percentage top
   function coordToPercent(x, y) {
     const left = ((x + 10) / 20) * 100;
-    const top = ((10 - y) / 20) * 100; // invert y so positive is up
+    const top = ((10 - y) / 20) * 100;
     return { left, top };
   }
 
-  function renderPoints() {
-    // Remove existing points
-    meter.querySelectorAll('.point').forEach(el => el.remove());
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
 
-    const entries = getEntries();
+  function renderAll(entries) {
+    // Render points on the meter
+    meter.querySelectorAll('.point').forEach(el => el.remove());
     entries.forEach(entry => {
       const { left, top } = coordToPercent(entry.x, entry.y);
       const color = nameToColor(entry.name);
-
       const point = document.createElement('div');
       point.className = 'point';
       point.style.left = `${left}%`;
@@ -298,21 +309,16 @@
       point.innerHTML = `<span class="dot" style="background:${color};"></span><span class="label">${escapeHtml(entry.name)}</span>`;
       meter.appendChild(point);
     });
-  }
 
-  function renderList() {
-    const entries = getEntries();
+    // Render entries list
     entriesList.innerHTML = '';
-
     if (entries.length === 0) {
       noEntries.style.display = '';
       clearBtn.style.display = 'none';
       return;
     }
-
     noEntries.style.display = 'none';
     clearBtn.style.display = '';
-
     entries.forEach(entry => {
       const li = document.createElement('li');
       const color = nameToColor(entry.name);
@@ -326,20 +332,12 @@
     });
   }
 
-  function escapeHtml(str) {
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
-  }
-
-  function render() {
-    renderPoints();
-    renderList();
-    // Hide placeholder if background image loads
-    const img = new Image();
-    img.onload = () => { placeholder.style.display = 'none'; };
-    img.src = 'mood-meter.png';
-  }
+  // Listen for real-time updates from Firebase
+  onValue(entriesRef, snapshot => {
+    const data = snapshot.val();
+    const entries = data ? Object.values(data) : [];
+    renderAll(entries);
+  });
 
   form.addEventListener('submit', e => {
     e.preventDefault();
@@ -351,25 +349,22 @@
     if (isNaN(x) || x < -10 || x > 10) return;
     if (isNaN(y) || y < -10 || y > 10) return;
 
-    const entries = getEntries();
-    entries.push({ name, x, y });
-    saveEntries(entries);
+    push(entriesRef, { name, x, y });
 
     nameInput.value = '';
     xInput.value = '';
     yInput.value = '';
     nameInput.focus();
-
-    render();
   });
 
   clearBtn.addEventListener('click', () => {
-    localStorage.removeItem(STORAGE_KEY);
-    render();
+    remove(entriesRef);
   });
 
-  // Initial render
-  render();
+  // Hide placeholder if background image loads
+  const img = new Image();
+  img.onload = () => { placeholder.style.display = 'none'; };
+  img.src = 'mood-meter.png';
 </script>
 
 </body>

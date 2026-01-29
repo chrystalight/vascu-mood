@@ -483,13 +483,8 @@
 
     // Render entries list (same filter as meter)
     entriesList.innerHTML = '';
-    if (meterEntries.length === 0) {
-      noEntries.style.display = '';
-      clearBtn.style.display = 'none';
-      return;
-    }
-    noEntries.style.display = 'none';
-    clearBtn.style.display = '';
+    noEntries.style.display = entries.length === 0 ? '' : 'none';
+    clearBtn.style.display = entries.length === 0 ? 'none' : '';
     meterEntries.forEach(entry => {
       const li = document.createElement('li');
       const color = entry.color || nameToColor(entry.name);
@@ -586,7 +581,10 @@
   });
 
   clearBtn.addEventListener('click', () => {
-    remove(entriesRef);
+    remove(entriesRef).catch(err => {
+      console.error('Clear failed (check Firebase rules):', err);
+      alert('Clear failed — check Firebase database rules allow writes.');
+    });
   });
 
   // Hide placeholder if background image loads

@@ -161,15 +161,25 @@
     color: #444;
   }
 
-  .guest-toggle {
-    font-size: 0.7rem;
-    color: #666;
-    cursor: pointer;
-    margin-left: 8px;
-    font-weight: normal;
-  }
-  .guest-toggle:hover {
+  .role-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    font-size: 0.85rem;
     color: #aaa;
+  }
+  .role-row select {
+    padding: 4px 8px;
+    border: 1px solid #444;
+    border-radius: 4px;
+    background: #0f3460;
+    color: #e0e0e0;
+    font-size: 0.85rem;
+  }
+  .role-row select:focus {
+    outline: none;
+    border-color: #e94560;
   }
 
   .id-error {
@@ -246,6 +256,11 @@
     cursor: pointer;
   }
 
+  .meter-filters {
+    display: flex;
+    gap: 12px;
+    margin-top: 6px;
+  }
   .meter-filter {
     font-size: 0.75rem;
     color: #666;
@@ -253,8 +268,6 @@
     display: flex;
     align-items: center;
     gap: 4px;
-    margin-top: 6px;
-    align-self: flex-end;
   }
   .meter-filter input {
     cursor: pointer;
@@ -270,10 +283,22 @@
     Add mood-meter.png to this directory to set the background image
   </span>
 </div>
-<label class="meter-filter"><input type="checkbox" id="hide-guests"> Yapstoners only</label>
+<div class="meter-filters" id="meter-filters">
+  <label class="meter-filter"><input type="checkbox" value="yapstoner" checked> Yapstoners</label>
+  <label class="meter-filter"><input type="checkbox" value="yapprentice" checked> Yapprentices</label>
+  <label class="meter-filter"><input type="checkbox" value="yapnt" checked> Yapn't</label>
+</div>
 
 <div class="form-section">
-  <h2>Plot Your Mood <span class="guest-toggle" id="guest-toggle">guest mode</span></h2>
+  <h2>Plot Your Mood</h2>
+  <div class="role-row">
+    <label for="role-select">I am a</label>
+    <select id="role-select">
+      <option value="yapstoner">Yapstoner</option>
+      <option value="yapprentice">Yapprentice</option>
+      <option value="yapnt">Yapn't</option>
+    </select>
+  </div>
   <form id="mood-form">
     <div class="input-row">
       <div class="input-group" style="flex:2;" id="id-group">
@@ -343,6 +368,7 @@
   const meter = document.getElementById('meter');
   const placeholder = document.getElementById('placeholder');
   const form = document.getElementById('mood-form');
+  const roleSelect = document.getElementById('role-select');
   const idInput = document.getElementById('id-input');
   const idGroup = document.getElementById('id-group');
   const nameInput = document.getElementById('name-input');
@@ -351,16 +377,20 @@
   const yInput = document.getElementById('y-input');
   const colorInput = document.getElementById('color-input');
   const colorGroup = document.getElementById('color-group');
-  const guestToggle = document.getElementById('guest-toggle');
   const idError = document.getElementById('id-error');
+  const filtersDiv = document.getElementById('meter-filters');
   const entriesList = document.getElementById('entries-list');
   const noEntries = document.getElementById('no-entries');
   const clearBtn = document.getElementById('clear-btn');
-  const hideGuestsCheckbox = document.getElementById('hide-guests');
 
-  let guestMode = false;
-  let hideGuests = false;
+  let currentRole = 'yapstoner';
+  let showRoles = new Set(['yapstoner', 'yapprentice', 'yapnt']);
   let currentEntries = [];
+
+  function getEntryRole(entry) {
+    if (entry.role) return entry.role;
+    return YAPSTONER_NAMES.has(entry.name) ? 'yapstoner' : 'yapnt';
+  }
 
   // Generate a consistent hex color from a name string
   function nameToColor(name) {
@@ -404,8 +434,8 @@
     const oldSvg = meter.querySelector('svg.lines-overlay');
     if (oldSvg) oldSvg.remove();
 
-    // Filter entries for the meter view
-    const meterEntries = hideGuests ? entries.filter(e => YAPSTONER_NAMES.has(e.name)) : entries;
+    // Filter entries for the meter view based on selected roles
+    const meterEntries = entries.filter(e => showRoles.has(getEntryRole(e)));
 
     // Group meter entries by name (preserving insertion order)
     const groups = new Map();
@@ -482,15 +512,16 @@
     renderAll(currentEntries);
   });
 
-  // Guest mode toggle
-  guestToggle.addEventListener('click', () => {
-    guestMode = !guestMode;
-    idGroup.style.display = guestMode ? 'none' : '';
-    nameGroup.style.display = guestMode ? '' : 'none';
-    colorGroup.style.display = guestMode ? '' : 'none';
-    guestToggle.textContent = guestMode ? 'yapstoner mode' : 'guest mode';
+  // Role selector
+  function updateFormFields() {
+    currentRole = roleSelect.value;
+    const isYapstoner = currentRole === 'yapstoner';
+    idGroup.style.display = isYapstoner ? '' : 'none';
+    nameGroup.style.display = isYapstoner ? 'none' : '';
+    colorGroup.style.display = isYapstoner ? 'none' : '';
     idError.textContent = '';
-  });
+  }
+  roleSelect.addEventListener('change', updateFormFields);
 
   form.addEventListener('submit', e => {
     e.preventDefault();
@@ -501,12 +532,8 @@
 
     const today = new Date().toISOString().slice(0, 10);
     let name, color;
-    if (guestMode) {
-      name = nameInput.value.trim();
-      color = colorInput.value;
-      if (!name) return;
-      push(entriesRef, { name, x, y, color, date: today });
-    } else {
+
+    if (currentRole === 'yapstoner') {
       const id = idInput.value.trim();
       const yapper = YAPSTONERS[id];
       if (!yapper) {
@@ -516,19 +543,30 @@
       }
       name = yapper.name;
       color = yapper.color;
-      // Override same-day entry for this Yapstoner
+    } else {
+      name = nameInput.value.trim();
+      color = colorInput.value;
+      if (!name) return;
+    }
+
+    const entryData = { name, x, y, color, date: today, role: currentRole };
+
+    if (currentRole === 'yapnt') {
+      push(entriesRef, entryData);
+    } else {
+      // Yapstoner and Yapprentice: same-day override
       const existing = currentEntries.find(e => e.name === name && e.date === today);
       if (existing) {
-        set(ref(db, 'entries/' + existing._key), { name, x, y, color, date: today });
+        set(ref(db, 'entries/' + existing._key), entryData);
       } else {
-        push(entriesRef, { name, x, y, color, date: today });
+        push(entriesRef, entryData);
       }
     }
 
-    if (guestMode) {
-      nameInput.value = '';
-    } else {
+    if (currentRole === 'yapstoner') {
       idInput.value = '';
+    } else {
+      nameInput.value = '';
     }
     xInput.value = '';
     yInput.value = '';
@@ -540,9 +578,10 @@
     if (name) colorInput.value = nameToColor(name);
   });
 
-  // Filter toggle for meter view
-  hideGuestsCheckbox.addEventListener('change', () => {
-    hideGuests = hideGuestsCheckbox.checked;
+  // Filter toggles for meter view
+  filtersDiv.addEventListener('change', () => {
+    showRoles.clear();
+    filtersDiv.querySelectorAll('input:checked').forEach(cb => showRoles.add(cb.value));
     renderAll(currentEntries);
   });
 

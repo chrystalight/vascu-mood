@@ -201,6 +201,21 @@
     font-size: 0.85rem;
     padding: 6px 0;
   }
+
+  .meter-container svg.lines-overlay {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+
+  .input-group input[type="color"] {
+    padding: 2px;
+    width: 40px;
+    height: 36px;
+    cursor: pointer;
+  }
 </style>
 </head>
 <body>
@@ -228,6 +243,10 @@
       <div class="input-group">
         <label for="y-input">Y (-10 to 10)</label>
         <input type="number" id="y-input" required min="-10" max="10" step="0.1" placeholder="0">
+      </div>
+      <div class="input-group" style="flex:0;">
+        <label for="color-input">Color</label>
+        <input type="color" id="color-input" value="#e94560">
       </div>
       <button type="submit" class="btn-submit">Plot</button>
     </div>
@@ -269,18 +288,32 @@
   const nameInput = document.getElementById('name-input');
   const xInput = document.getElementById('x-input');
   const yInput = document.getElementById('y-input');
+  const colorInput = document.getElementById('color-input');
   const entriesList = document.getElementById('entries-list');
   const noEntries = document.getElementById('no-entries');
   const clearBtn = document.getElementById('clear-btn');
 
-  // Generate a consistent color from a name string
+  // Generate a consistent hex color from a name string
   function nameToColor(name) {
     let hash = 0;
     for (let i = 0; i < name.length; i++) {
       hash = name.charCodeAt(i) + ((hash << 5) - hash);
     }
     const h = ((hash % 360) + 360) % 360;
-    return `hsl(${h}, 70%, 55%)`;
+    // Convert HSL (h, 70%, 55%) to hex
+    const s = 0.7, l = 0.55;
+    const c = (1 - Math.abs(2 * l - 1)) * s;
+    const x = c * (1 - Math.abs((h / 60) % 2 - 1));
+    const m = l - c / 2;
+    let r, g, b;
+    if (h < 60)      { r = c; g = x; b = 0; }
+    else if (h < 120) { r = x; g = c; b = 0; }
+    else if (h < 180) { r = 0; g = c; b = x; }
+    else if (h < 240) { r = 0; g = x; b = c; }
+    else if (h < 300) { r = x; g = 0; b = c; }
+    else              { r = c; g = 0; b = x; }
+    const toHex = v => Math.round((v + m) * 255).toString(16).padStart(2, '0');
+    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
   }
 
   // Convert x (-10..10) to percentage left, y (-10..10) to percentage top
@@ -297,16 +330,52 @@
   }
 
   function renderAll(entries) {
-    // Render points on the meter
+    // Clear old points and SVG
     meter.querySelectorAll('.point').forEach(el => el.remove());
+    const oldSvg = meter.querySelector('svg.lines-overlay');
+    if (oldSvg) oldSvg.remove();
+
+    // Group entries by name (preserving insertion order)
+    const groups = new Map();
     entries.forEach(entry => {
-      const { left, top } = coordToPercent(entry.x, entry.y);
-      const color = nameToColor(entry.name);
+      if (!groups.has(entry.name)) groups.set(entry.name, []);
+      groups.get(entry.name).push(entry);
+    });
+
+    // Create SVG overlay for line segments
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('class', 'lines-overlay');
+    svg.setAttribute('viewBox', '0 0 100 100');
+    svg.setAttribute('preserveAspectRatio', 'none');
+    meter.appendChild(svg);
+
+    // For each group: draw lines between consecutive entries, render only last dot+label
+    groups.forEach((groupEntries, name) => {
+      const color = groupEntries[0].color || nameToColor(name);
+
+      // Draw line segments for groups with 2+ entries
+      for (let i = 1; i < groupEntries.length; i++) {
+        const prev = coordToPercent(groupEntries[i - 1].x, groupEntries[i - 1].y);
+        const curr = coordToPercent(groupEntries[i].x, groupEntries[i].y);
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', prev.left);
+        line.setAttribute('y1', prev.top);
+        line.setAttribute('x2', curr.left);
+        line.setAttribute('y2', curr.top);
+        line.setAttribute('stroke', color);
+        line.setAttribute('stroke-width', '0.5');
+        line.setAttribute('stroke-linecap', 'round');
+        svg.appendChild(line);
+      }
+
+      // Only render dot+label for the last entry in the group
+      const last = groupEntries[groupEntries.length - 1];
+      const { left, top } = coordToPercent(last.x, last.y);
       const point = document.createElement('div');
       point.className = 'point';
       point.style.left = `${left}%`;
       point.style.top = `${top}%`;
-      point.innerHTML = `<span class="dot" style="background:${color};"></span><span class="label">${escapeHtml(entry.name)}</span>`;
+      point.innerHTML = `<span class="dot" style="background:${color};"></span><span class="label">${escapeHtml(name)}</span>`;
       meter.appendChild(point);
     });
 
@@ -321,7 +390,7 @@
     clearBtn.style.display = '';
     entries.forEach(entry => {
       const li = document.createElement('li');
-      const color = nameToColor(entry.name);
+      const color = entry.color || nameToColor(entry.name);
       li.innerHTML = `
         <span class="entry-info">
           <span class="entry-color" style="background:${color};"></span>
@@ -349,12 +418,19 @@
     if (isNaN(x) || x < -10 || x > 10) return;
     if (isNaN(y) || y < -10 || y > 10) return;
 
-    push(entriesRef, { name, x, y });
+    const color = colorInput.value;
+    push(entriesRef, { name, x, y, color });
 
     nameInput.value = '';
     xInput.value = '';
     yInput.value = '';
     nameInput.focus();
+  });
+
+  // Auto-set color picker from name hash when name changes
+  nameInput.addEventListener('input', () => {
+    const name = nameInput.value.trim();
+    if (name) colorInput.value = nameToColor(name);
   });
 
   clearBtn.addEventListener('click', () => {

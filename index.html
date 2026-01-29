@@ -356,14 +356,20 @@
   const db = getDatabase(app);
   const entriesRef = ref(db, 'entries');
 
-  // Yapstoner secret IDs
+  // Yapstoner IDs stored as SHA-256 hashes (plaintext IDs never appear in source)
   const YAPSTONERS = {
-    'cq84': { name: 'Catie',  color: '#e94560' },
-    'lx29': { name: 'Lucas',  color: '#4ecdc4' },
-    'cf51': { name: 'Connor', color: '#f7b731' },
-    'mk73': { name: 'Mattie', color: '#a55eea' },
+    'a436a8dd689434d9723c41a10a5ca09ec695d7cb6058682c427f2c83a235bea3': { name: 'Catie',  color: '#e94560' },
+    '8839b05bb6974537bab311dfc473c02fe82523479555ec1d8083e32cd38793f2': { name: 'Lucas',  color: '#4ecdc4' },
+    '4a4fa35292de83b9c7f8b35ea32c6365e2ae152d217ef326280d6bae3808dc2f': { name: 'Connor', color: '#f7b731' },
+    'a40db4514c55e6ca16d0cb3fe5510322899fbfc18d43439089cd53b47b17294a': { name: 'Mattie', color: '#a55eea' },
   };
   const YAPSTONER_NAMES = new Set(Object.values(YAPSTONERS).map(y => y.name));
+
+  async function hashId(id) {
+    const data = new TextEncoder().encode(id);
+    const buf = await crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+  }
 
   const meter = document.getElementById('meter');
   const placeholder = document.getElementById('placeholder');
@@ -518,7 +524,7 @@
   }
   roleSelect.addEventListener('change', updateFormFields);
 
-  form.addEventListener('submit', e => {
+  form.addEventListener('submit', async e => {
     e.preventDefault();
     const x = parseFloat(xInput.value);
     const y = parseFloat(yInput.value);
@@ -530,7 +536,8 @@
 
     if (currentRole === 'yapstoner') {
       const id = idInput.value.trim();
-      const yapper = YAPSTONERS[id];
+      const hashed = await hashId(id);
+      const yapper = YAPSTONERS[hashed];
       if (!yapper) {
         idError.textContent = 'Invalid ID';
         setTimeout(() => idError.textContent = '', 2000);

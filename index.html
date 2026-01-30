@@ -778,7 +778,6 @@
   }
 
   const meter = document.getElementById('meter');
-  const placeholder = document.getElementById('placeholder');
   const form = document.getElementById('mood-form');
   const roleSelect = document.getElementById('role-select');
   const idInput = document.getElementById('id-input');
@@ -793,7 +792,6 @@
   const filtersDiv = document.getElementById('meter-filters');
   const entriesList = document.getElementById('entries-list');
   const noEntries = document.getElementById('no-entries');
-  const clearBtn = document.getElementById('clear-btn');
   const adminIdInput = document.getElementById('admin-id');
   const adminAuthBtn = document.getElementById('admin-auth-btn');
   const adminAuthRow = document.getElementById('admin-auth-row');
@@ -1021,7 +1019,6 @@
     // Render entries list (same filter as meter)
     entriesList.innerHTML = '';
     noEntries.style.display = entries.length === 0 ? '' : 'none';
-    clearBtn.style.display = entries.length === 0 ? 'none' : '';
     meterEntries.forEach(entry => {
       const li = document.createElement('li');
       const prefs = currentPrefs[entry.name];
@@ -1162,17 +1159,6 @@
     });
   });
 
-  clearBtn.addEventListener('click', () => {
-    remove(entriesRef).catch(err => {
-      console.error('Clear failed (check Firebase rules):', err);
-      alert('Clear failed — check Firebase database rules allow writes.');
-    });
-  });
-
-  // Hide placeholder if background image loads
-  const img = new Image();
-  img.onload = () => { placeholder.style.display = 'none'; };
-  img.src = 'mood-meter.png';
 </script>
 
 </body>

@@ -3,25 +3,29 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet">
 <title>Mood Meter</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
   body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background: #1a1a2e;
-    color: #e0e0e0;
+    font-family: 'Quicksand', sans-serif;
+    background: #faf0e6;
+    color: #3a2030;
     display: flex;
     flex-direction: column;
     align-items: center;
     min-height: 100vh;
-    padding: 20px;
+    padding: 24px;
   }
 
   h1 {
-    font-size: 2rem;
+    font-size: 2.2rem;
+    font-weight: 700;
     margin-bottom: 20px;
-    color: #f5f5f5;
+    color: #6b1d3a;
+    letter-spacing: 1px;
+    text-transform: uppercase;
   }
 
   .meter-container {
@@ -33,10 +37,11 @@
     background-image: url('mood-meter.png');
     background-size: cover;
     background-position: center;
-    background-color: #2a2a4a;
-    border: 2px solid #444;
-    border-radius: 8px;
+    background-color: #f5ede3;
+    border: 3px solid #6b1d3a;
+    border-radius: 16px;
     overflow: hidden;
+    box-shadow: 5px 5px 0px #5f9e9e;
   }
 
   .meter-container .placeholder-text {
@@ -46,7 +51,7 @@
     align-items: center;
     justify-content: center;
     text-align: center;
-    color: #888;
+    color: #9e8888;
     font-size: 0.9rem;
     padding: 20px;
     pointer-events: none;
@@ -75,8 +80,9 @@
   .dot.shape-star { border-radius: 0; clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
 
   .point .label {
+    font-family: 'Quicksand', sans-serif;
     font-size: 0.75rem;
-    font-weight: 600;
+    font-weight: 700;
     color: #fff;
     text-shadow: 1px 1px 3px rgba(0,0,0,0.8), -1px -1px 3px rgba(0,0,0,0.8);
     white-space: nowrap;
@@ -84,17 +90,20 @@
 
   .form-section {
     margin-top: 20px;
-    background: #16213e;
+    background: #fff;
     padding: 20px;
-    border-radius: 8px;
+    border-radius: 16px;
+    border: 3px solid #6b1d3a;
+    box-shadow: 5px 5px 0px #5f9e9e;
     width: 500px;
     max-width: 90vw;
   }
 
   .form-section h2 {
     font-size: 1.1rem;
+    font-weight: 700;
     margin-bottom: 12px;
-    color: #ccc;
+    color: #6b1d3a;
   }
 
   .input-row {
@@ -114,70 +123,89 @@
 
   .input-group label {
     font-size: 0.8rem;
-    color: #aaa;
+    font-weight: 600;
+    color: #5f9e9e;
   }
 
   .input-group input {
     padding: 8px 10px;
-    border: 1px solid #444;
-    border-radius: 4px;
-    background: #0f3460;
-    color: #e0e0e0;
+    border: 2px solid #c5d8d8;
+    border-radius: 10px;
+    background: #f5f0eb;
+    color: #3a2030;
+    font-family: 'Quicksand', sans-serif;
     font-size: 0.9rem;
+    font-weight: 600;
   }
 
   .input-group input:focus, .input-group select:focus {
     outline: none;
-    border-color: #e94560;
+    border-color: #6b1d3a;
+    box-shadow: 2px 2px 0px #5f9e9e;
   }
 
   .input-group select {
     padding: 8px 10px;
-    border: 1px solid #444;
-    border-radius: 4px;
-    background: #0f3460;
-    color: #e0e0e0;
+    border: 2px solid #c5d8d8;
+    border-radius: 10px;
+    background: #f5f0eb;
+    color: #3a2030;
+    font-family: 'Quicksand', sans-serif;
     font-size: 0.9rem;
+    font-weight: 600;
   }
 
   .admin-greeting {
     font-size: 0.9rem;
-    color: #ccc;
+    font-weight: 600;
+    color: #6b1d3a;
     margin-bottom: 10px;
   }
 
   button {
     padding: 8px 16px;
-    border: none;
-    border-radius: 4px;
+    border: 2px solid #6b1d3a;
+    border-radius: 10px;
     cursor: pointer;
+    font-family: 'Quicksand', sans-serif;
     font-size: 0.9rem;
-    font-weight: 600;
-    transition: opacity 0.2s;
+    font-weight: 700;
+    transition: transform 0.1s, box-shadow 0.1s;
   }
 
-  button:hover { opacity: 0.85; }
+  button:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 4px 4px 0px #5f9e9e;
+  }
+  button:active {
+    transform: translate(0, 0);
+    box-shadow: none;
+  }
 
   .btn-submit {
-    background: #e94560;
-    color: #fff;
+    background: #6b1d3a;
+    color: #faf0e6;
     align-self: flex-end;
+    box-shadow: 3px 3px 0px #5f9e9e;
   }
 
   .btn-clear {
     background: none;
     border: none;
-    color: #222;
+    color: #c5b8b0;
     font-size: 0.6rem;
     font-weight: normal;
     cursor: default;
     margin-top: 20px;
     padding: 2px 4px;
     opacity: 0.4;
+    box-shadow: none;
   }
   .btn-clear:hover {
     opacity: 0.7;
-    color: #444;
+    color: #8a7a72;
+    transform: none;
+    box-shadow: none;
   }
 
   .role-row {
@@ -186,39 +214,50 @@
     gap: 8px;
     margin-bottom: 12px;
     font-size: 0.85rem;
-    color: #aaa;
+    font-weight: 600;
+    color: #5f9e9e;
   }
   .role-row select {
     padding: 4px 8px;
-    border: 1px solid #444;
-    border-radius: 4px;
-    background: #0f3460;
-    color: #e0e0e0;
+    border: 2px solid #c5d8d8;
+    border-radius: 10px;
+    background: #f5f0eb;
+    color: #3a2030;
+    font-family: 'Quicksand', sans-serif;
     font-size: 0.85rem;
+    font-weight: 600;
   }
   .role-row select:focus {
     outline: none;
-    border-color: #e94560;
+    border-color: #6b1d3a;
+    box-shadow: 2px 2px 0px #5f9e9e;
   }
 
   .id-error {
-    color: #e94560;
+    color: #c0392b;
     font-size: 0.8rem;
+    font-weight: 600;
     margin-top: 6px;
     display: block;
     height: 1.2em;
   }
 
   .entries-section {
-    margin-top: 16px;
+    margin-top: 20px;
+    background: #fff;
+    padding: 20px;
+    border-radius: 16px;
+    border: 3px solid #6b1d3a;
+    box-shadow: 5px 5px 0px #5f9e9e;
     width: 500px;
     max-width: 90vw;
   }
 
   .entries-section h2 {
     font-size: 1.1rem;
+    font-weight: 700;
     margin-bottom: 8px;
-    color: #ccc;
+    color: #6b1d3a;
   }
 
   .entries-list {
@@ -232,8 +271,10 @@
     justify-content: space-between;
     align-items: center;
     padding: 6px 10px;
-    border-bottom: 1px solid #2a2a4a;
+    border-bottom: 2px dashed #e8ddd3;
     font-size: 0.85rem;
+    font-weight: 600;
+    color: #3a2030;
   }
 
   .entries-list li .entry-color {
@@ -243,7 +284,7 @@
     display: inline-block;
     margin-right: 8px;
     flex-shrink: 0;
-    filter: drop-shadow(0 0 1px #fff) drop-shadow(0 0 1px #fff);
+    filter: drop-shadow(0 0 1px rgba(0,0,0,0.3));
   }
 
   .entries-list li .entry-info {
@@ -252,12 +293,14 @@
   }
 
   .entries-list li .entry-coords {
-    color: #888;
+    color: #5f9e9e;
+    font-weight: 600;
   }
 
   .no-entries {
-    color: #666;
+    color: #b0a098;
     font-size: 0.85rem;
+    font-weight: 600;
     padding: 6px 0;
   }
 
@@ -274,29 +317,58 @@
     width: 40px;
     height: 36px;
     cursor: pointer;
+    border-radius: 10px;
   }
 
   .meter-filters {
     display: flex;
-    gap: 12px;
-    margin-top: 6px;
+    gap: 14px;
+    margin-top: 8px;
   }
   .meter-filter {
-    font-size: 0.75rem;
-    color: #666;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #6b1d3a;
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
+    user-select: none;
   }
   .meter-filter input {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 22px;
+    height: 22px;
+    border: 3px solid #6b1d3a;
+    border-radius: 6px;
+    background: #fff;
     cursor: pointer;
+    position: relative;
+    flex-shrink: 0;
+    transition: background 0.15s, box-shadow 0.15s;
+    box-shadow: 2px 2px 0px #5f9e9e;
+  }
+  .meter-filter input:checked {
+    background: #6b1d3a;
+  }
+  .meter-filter input:checked::after {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 1px;
+    width: 6px;
+    height: 11px;
+    border: solid #faf0e6;
+    border-width: 0 3px 3px 0;
+    transform: rotate(45deg);
+  }
+  .meter-filter input:hover {
+    box-shadow: 3px 3px 0px #5f9e9e;
   }
 </style>
 </head>
 <body>
-
-<h1>Mood Meter</h1>
 
 <div class="meter-container" id="meter">
   <span class="placeholder-text" id="placeholder">

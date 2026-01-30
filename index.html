@@ -483,6 +483,131 @@
     box-shadow: 3px 3px 0px #3d6b6b;
   }
 
+  .meter-container.blob-active {
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cellipse cx='12' cy='12' rx='9' ry='8' fill='%23e94560' opacity='0.85' /%3E%3Cellipse cx='12' cy='12' rx='9' ry='8' fill='url(%23g)' opacity='0.7' /%3E%3Ccircle cx='9' cy='10' r='1.5' fill='%233a2030'/%3E%3Ccircle cx='15' cy='10' r='1.5' fill='%233a2030'/%3E%3Cpath d='M9 15 Q12 17 15 15' stroke='%233a2030' stroke-width='1.2' fill='none' stroke-linecap='round'/%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%23e94560'/%3E%3Cstop offset='100%25' stop-color='%23f7b731'/%3E%3C/linearGradient%3E%3C/defs%3E%3C/svg%3E") 12 12, crosshair;
+  }
+  body.dark .meter-container.blob-active {
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cellipse cx='12' cy='12' rx='9' ry='8' fill='%238fbcbc' opacity='0.85' /%3E%3Cellipse cx='12' cy='12' rx='9' ry='8' fill='url(%23g)' opacity='0.7' /%3E%3Ccircle cx='9' cy='10' r='1.5' fill='%231e0f18'/%3E%3Ccircle cx='15' cy='10' r='1.5' fill='%231e0f18'/%3E%3Cpath d='M9 15 Q12 17 15 15' stroke='%231e0f18' stroke-width='1.2' fill='none' stroke-linecap='round'/%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%238fbcbc'/%3E%3Cstop offset='100%25' stop-color='%23a55eea'/%3E%3C/linearGradient%3E%3C/defs%3E%3C/svg%3E") 12 12, crosshair;
+  }
+
+  .placement-marker {
+    display: none;
+    position: absolute;
+    width: 28px;
+    height: 28px;
+    transform: translate(-50%, -50%);
+    border-radius: 50% 40% 50% 45%;
+    background: linear-gradient(135deg, #e94560, #f7b731);
+    z-index: 2;
+    cursor: grab;
+    box-shadow: 0 0 8px rgba(233, 69, 96, 0.4);
+    animation: wobble 2s ease-in-out infinite;
+    pointer-events: auto;
+  }
+  .placement-marker::before {
+    content: '';
+    position: absolute;
+    top: 8px;
+    left: 6px;
+    width: 4px;
+    height: 4px;
+    background: #3a2030;
+    border-radius: 50%;
+    box-shadow: 10px 0 0 #3a2030;
+  }
+  .placement-marker::after {
+    content: '';
+    position: absolute;
+    bottom: 5px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 8px;
+    height: 4px;
+    border: 2px solid #3a2030;
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+  }
+  .placement-marker.dragging {
+    cursor: grabbing;
+    animation: wobble-drag 0.6s ease-in-out infinite;
+  }
+  .placement-marker.squish {
+    animation: squish 0.35s ease-out;
+  }
+  @keyframes wobble {
+    0%   { transform: translate(-50%, -50%) rotate(0deg);   border-radius: 50% 40% 50% 45%; }
+    25%  { transform: translate(-50%, -50%) rotate(3deg);   border-radius: 45% 50% 40% 50%; }
+    50%  { transform: translate(-50%, -50%) rotate(-2deg);  border-radius: 40% 45% 50% 40%; }
+    75%  { transform: translate(-50%, -50%) rotate(2deg);   border-radius: 50% 40% 45% 50%; }
+    100% { transform: translate(-50%, -50%) rotate(0deg);   border-radius: 50% 40% 50% 45%; }
+  }
+  @keyframes wobble-drag {
+    0%   { transform: translate(-50%, -50%) scaleX(1.15) scaleY(0.9) rotate(0deg); }
+    50%  { transform: translate(-50%, -50%) scaleX(0.9) scaleY(1.1) rotate(2deg); }
+    100% { transform: translate(-50%, -50%) scaleX(1.15) scaleY(0.9) rotate(0deg); }
+  }
+  @keyframes squish {
+    0%   { transform: translate(-50%, -50%) scale(0.5); }
+    40%  { transform: translate(-50%, -50%) scaleX(1.3) scaleY(0.75); }
+    70%  { transform: translate(-50%, -50%) scaleX(0.9) scaleY(1.1); }
+    100% { transform: translate(-50%, -50%) scale(1); }
+  }
+
+  body.dark .placement-marker {
+    background: linear-gradient(135deg, #8fbcbc, #a55eea);
+    box-shadow: 0 0 8px rgba(143, 188, 188, 0.4);
+  }
+  body.dark .placement-marker::before {
+    background: #1e0f18;
+    box-shadow: 10px 0 0 #1e0f18;
+  }
+  body.dark .placement-marker::after {
+    border-color: #1e0f18;
+  }
+
+  .btn-blob {
+    display: block;
+    margin-bottom: 12px;
+    padding: 5px 14px;
+    font-size: 0.8rem;
+    border: 2px solid #6b1d3a;
+    border-radius: 20px;
+    background: #fff;
+    color: #6b1d3a;
+    box-shadow: 2px 2px 0px #5f9e9e;
+    cursor: pointer;
+    font-family: 'Quicksand', sans-serif;
+    font-weight: 700;
+    transition: transform 0.1s, box-shadow 0.1s, background 0.2s, color 0.2s;
+  }
+  .btn-blob:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 4px 4px 0px #5f9e9e;
+  }
+  .btn-blob:active {
+    transform: translate(0, 0);
+    box-shadow: none;
+  }
+  .btn-blob.active {
+    background: #6b1d3a;
+    color: #faf0e6;
+    box-shadow: 2px 2px 0px #5f9e9e, 0 0 10px rgba(107, 29, 58, 0.3);
+  }
+  body.dark .btn-blob {
+    background: #3a2535;
+    color: #8fbcbc;
+    border-color: #8fbcbc;
+    box-shadow: 2px 2px 0px #3d6b6b;
+  }
+  body.dark .btn-blob:hover {
+    box-shadow: 4px 4px 0px #3d6b6b;
+  }
+  body.dark .btn-blob.active {
+    background: #8fbcbc;
+    color: #1e0f18;
+    box-shadow: 2px 2px 0px #3d6b6b, 0 0 10px rgba(143, 188, 188, 0.3);
+  }
+
   .sparkle {
     position: fixed;
     pointer-events: none;
@@ -504,6 +629,7 @@
   <span class="placeholder-text" id="placeholder">
     Add mood-meter.png to this directory to set the background image
   </span>
+  <div class="placement-marker" id="placement-marker"></div>
 </div>
 <div class="meter-filters" id="meter-filters">
   <label class="meter-filter"><input type="checkbox" value="yapstoner" checked> Yapstoners</label>
@@ -521,6 +647,7 @@
       <option value="yapnt">Yapn't</option>
     </select>
   </div>
+  <button type="button" class="btn-blob" id="blob-toggle">Blob Mode: OFF</button>
   <form id="mood-form">
     <div class="input-row">
       <div class="input-group" style="flex:2;" id="id-group">
@@ -691,6 +818,99 @@
   const adminColor = document.getElementById('admin-color');
   const adminShape = document.getElementById('admin-shape');
   const adminSaveBtn = document.getElementById('admin-save-btn');
+
+  // Placement marker logic
+  const placementMarker = document.getElementById('placement-marker');
+  const blobToggle = document.getElementById('blob-toggle');
+  let dragging = false;
+  let blobMode = false;
+
+  function percentToCoord(leftPct, topPct) {
+    const x = Math.round(((leftPct / 100) * 20 - 10) * 10) / 10;
+    const y = Math.round((10 - (topPct / 100) * 20) * 10) / 10;
+    return { x, y };
+  }
+
+  function positionFromEvent(e) {
+    const rect = meter.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    const leftPct = Math.min(100, Math.max(0, ((clientX - rect.left) / rect.width) * 100));
+    const topPct = Math.min(100, Math.max(0, ((clientY - rect.top) / rect.height) * 100));
+    return { leftPct, topPct };
+  }
+
+  function placeMarkerAt(leftPct, topPct) {
+    placementMarker.style.left = leftPct + '%';
+    placementMarker.style.top = topPct + '%';
+    placementMarker.style.display = '';
+    const { x, y } = percentToCoord(leftPct, topPct);
+    xInput.value = x;
+    yInput.value = y;
+    placementMarker.classList.add('squish');
+    placementMarker.addEventListener('animationend', function handler() {
+      placementMarker.classList.remove('squish');
+      placementMarker.removeEventListener('animationend', handler);
+    });
+  }
+
+  meter.addEventListener('click', e => {
+    if (!blobMode) return;
+    if (dragging) return;
+    if (e.target === placementMarker || placementMarker.contains(e.target)) return;
+    const { leftPct, topPct } = positionFromEvent(e);
+    placeMarkerAt(leftPct, topPct);
+  });
+
+  function onDragStart(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    dragging = true;
+    placementMarker.classList.add('dragging');
+  }
+  function onDragMove(e) {
+    if (!dragging) return;
+    e.preventDefault();
+    const { leftPct, topPct } = positionFromEvent(e);
+    placeMarkerAt(leftPct, topPct);
+  }
+  function onDragEnd() {
+    if (!dragging) return;
+    dragging = false;
+    placementMarker.classList.remove('dragging');
+  }
+
+  placementMarker.addEventListener('mousedown', onDragStart);
+  placementMarker.addEventListener('touchstart', onDragStart, { passive: false });
+  document.addEventListener('mousemove', onDragMove);
+  document.addEventListener('touchmove', onDragMove, { passive: false });
+  document.addEventListener('mouseup', onDragEnd);
+  document.addEventListener('touchend', onDragEnd);
+
+  function onCoordInput() {
+    if (!blobMode) return;
+    const x = parseFloat(xInput.value);
+    const y = parseFloat(yInput.value);
+    if (isNaN(x) || isNaN(y)) return;
+    const cx = Math.min(10, Math.max(-10, x));
+    const cy = Math.min(10, Math.max(-10, y));
+    const { left, top } = coordToPercent(cx, cy);
+    placementMarker.style.left = left + '%';
+    placementMarker.style.top = top + '%';
+    placementMarker.style.display = '';
+  }
+  xInput.addEventListener('input', onCoordInput);
+  yInput.addEventListener('input', onCoordInput);
+
+  blobToggle.addEventListener('click', () => {
+    blobMode = !blobMode;
+    blobToggle.textContent = blobMode ? 'Blob Mode: ON' : 'Blob Mode: OFF';
+    blobToggle.classList.toggle('active', blobMode);
+    meter.classList.toggle('blob-active', blobMode);
+    if (!blobMode) {
+      placementMarker.style.display = 'none';
+    }
+  });
 
   let currentRole = 'yapstoner';
   let showRoles = new Set(['yapstoner', 'yapprentice', 'yapnt']);
@@ -909,6 +1129,11 @@
     }
     xInput.value = '';
     yInput.value = '';
+    placementMarker.style.display = 'none';
+    blobMode = false;
+    blobToggle.textContent = 'Blob Mode: OFF';
+    blobToggle.classList.remove('active');
+    meter.classList.remove('blob-active');
   });
 
   // Auto-set color picker from name hash when name changes (guest mode)

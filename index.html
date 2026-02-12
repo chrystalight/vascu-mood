@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><ellipse cx='16' cy='16' rx='13' ry='12' fill='%23e94560' rx='13' ry='12'/><ellipse cx='16' cy='16' rx='13' ry='12' fill='url(%23g)' opacity='.7'/><circle cx='11' cy='13' r='2' fill='%233a2030'/><circle cx='21' cy='13' r='2' fill='%233a2030'/><path d='M10 21 Q16 26 22 21' stroke='%233a2030' stroke-width='2' fill='none' stroke-linecap='round'/><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0%25' stop-color='%23e94560'/><stop offset='100%25' stop-color='%23f7b731'/></linearGradient></defs></svg>">
 <title>Mood Meter v2</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -59,12 +60,10 @@
 
   .point {
     position: absolute;
-    transform: translate(-50%, -50%);
-    display: flex;
-    align-items: center;
-    gap: 4px;
     pointer-events: none;
     z-index: 1;
+    width: 0;
+    height: 0;
   }
 
   .point .dot {
@@ -72,14 +71,37 @@
     height: 14px;
     border-radius: 50%;
     flex-shrink: 0;
-    filter: drop-shadow(0 0 1.5px #fff) drop-shadow(0 0 1.5px #fff);
+    border: 1.5px solid white;
+    box-shadow: 0 0 3px white;
+    position: absolute;
+    left: 0;
+    top: 0;
+    transform: translate(-50%, -50%);
   }
   .dot.shape-square { border-radius: 2px; }
-  .dot.shape-diamond { border-radius: 2px; transform: rotate(45deg); }
-  .dot.shape-triangle { border-radius: 0; clip-path: polygon(50% 0%, 100% 100%, 0% 100%); }
-  .dot.shape-star { border-radius: 0; clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
+  .dot.shape-diamond { border-radius: 2px; transform: rotate(45deg) translate(-50%, -50%); }
+  .dot.shape-triangle {
+    border-radius: 0;
+    clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
+    transform: translate(-50%, -50%);
+    border: none;
+    box-shadow: none;
+    filter: drop-shadow(0 0 2px white);
+  }
+  .dot.shape-star {
+    border-radius: 0;
+    clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+    transform: translate(-50%, -50%);
+    border: none;
+    box-shadow: none;
+    filter: drop-shadow(0 0 2px white);
+  }
 
   .point .label {
+    position: absolute;
+    left: calc(7px + 4px); /* Half dot width (7px) + gap (4px) */
+    top: 50%;
+    transform: translateY(-50%); /* Vertically center the label */
     font-family: 'Quicksand', sans-serif;
     font-size: 0.75rem;
     font-weight: 700;
@@ -760,10 +782,10 @@
 
   // Yapstoner IDs stored as SHA-256 hashes (plaintext IDs never appear in source)
   const YAPSTONERS = {
-    'a436a8dd689434d9723c41a10a5ca09ec695d7cb6058682c427f2c83a235bea3': { name: 'Catie',  color: '#e94560' },
-    '8839b05bb6974537bab311dfc473c02fe82523479555ec1d8083e32cd38793f2': { name: 'Lucas',  color: '#4ecdc4' },
-    '4a4fa35292de83b9c7f8b35ea32c6365e2ae152d217ef326280d6bae3808dc2f': { name: 'Connor', color: '#f7b731' },
-    'a40db4514c55e6ca16d0cb3fe5510322899fbfc18d43439089cd53b47b17294a': { name: 'Mattie', color: '#a55eea' },
+    '17f970176f0e5e4fcf5872e3868a8cc3719d9d450e8bda8952bff70b7eb7be62': { name: 'Catie',  color: '#e94560' },
+    '0cc6af186804ec14414e0e761fc8067da2f53ade90362e396fd55dabcd6d7b74': { name: 'Lucas',  color: '#4ecdc4' },
+    '584833e7585e9929bab095eb1fb01c1b6638df026d28c563e157401d6919a2ef': { name: 'Connor', color: '#f7b731' },
+    '473f6912be49b75f4fe0e96047db4bb76b7f292c8b6aa5ff388e732555bd87a2': { name: 'Mattie', color: '#a55eea' },
   };
   const YAPPRENTICES = {
     'a212eac8a074be0065789162a1b6746133899ae629df246afc26cc069535e49c': { name: 'Sean', color: '#45b7d1' },
@@ -950,6 +972,39 @@
     return `${months[parseInt(m) - 1]} ${parseInt(d)}`;
   }
 
+  // Helper to calculate line properties
+  const line = (pointA, pointB) => {
+    const lengthX = pointB.left - pointA.left;
+    const lengthY = pointB.top - pointA.top;
+    return {
+      length: Math.sqrt(Math.pow(lengthX, 2) + Math.pow(lengthY, 2)),
+      angle: Math.atan2(lengthY, lengthX)
+    };
+  };
+
+  // Helper to calculate control points for a smooth curve
+  const controlPoint = (current, previous, next, reverse) => {
+    const p = previous || current;
+    const n = next || current;
+    const smoothing = 0.2; // The smoothing factor
+    const o = line(p, n);
+    const angle = o.angle + (reverse ? Math.PI : 0);
+    const length = o.length * smoothing;
+    const x = current.left + Math.cos(angle) * length;
+    const y = current.top + Math.sin(angle) * length;
+    return [x, y];
+  };
+
+  // Generate the 'd' attribute for a smooth SVG path from a set of points
+  function smoothPath(points) {
+    return points.reduce((acc, point, i, a) => {
+      if (i === 0) return `M ${point.left},${point.top}`;
+      const [cpsX, cpsY] = controlPoint(a[i - 1], a[i - 2], point);
+      const [cpeX, cpeY] = controlPoint(point, a[i - 1], a[i + 1], true);
+      return `${acc} C ${cpsX},${cpsY} ${cpeX},${cpeY} ${point.left},${point.top}`;
+    }, '');
+  }
+
   function renderAll(entries) {
     // Clear old points and SVG
     meter.querySelectorAll('.point').forEach(el => el.remove());
@@ -981,44 +1036,104 @@
     svg.setAttribute('preserveAspectRatio', 'none');
     meter.appendChild(svg);
 
+    // Create a <defs> element for the gradients
+    let defs = svg.querySelector('defs');
+    if (!defs) {
+        defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+        svg.appendChild(defs);
+    }
+    let gradientCounter = 0;
+
     // For each group: draw lines between consecutive entries, render only last dot+label
     groups.forEach((groupEntries, name) => {
       const prefs = currentPrefs[name];
       const color = prefs?.color || groupEntries[0].color || nameToColor(name);
       const shape = prefs?.shape || 'circle';
 
-      // Draw line segments only between entries from different days
-      for (let i = 1; i < groupEntries.length; i++) {
-        const prevDate = groupEntries[i - 1].date;
-        const currDate = groupEntries[i].date;
-        if (!prevDate || !currDate || prevDate === currDate) continue;
-        const prev = coordToPercent(groupEntries[i - 1].x, groupEntries[i - 1].y);
-        const curr = coordToPercent(groupEntries[i].x, groupEntries[i].y);
-        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        line.setAttribute('x1', prev.left);
-        line.setAttribute('y1', prev.top);
-        line.setAttribute('x2', curr.left);
-        line.setAttribute('y2', curr.top);
-        line.setAttribute('stroke', color);
-        line.setAttribute('stroke-width', '0.5');
-        line.setAttribute('stroke-linecap', 'round');
-        svg.appendChild(line);
+      // Get the last entry for each day to draw the trend line
+      const dailyLastEntries = [];
+      const dayMap = new Map();
+      groupEntries.forEach(entry => {
+        if (entry.date) {
+            dayMap.set(entry.date, entry);
+        }
+      });
+      dailyLastEntries.push(...Array.from(dayMap.values()).sort((a,b) => new Date(a.date) - new Date(b.date)));
+
+      if (dailyLastEntries.length > 1) {
+        const points = dailyLastEntries.map(entry => coordToPercent(entry.x, entry.y));
+        const pathData = smoothPath(points);
+
+        const startPoint = points[0];
+        const endPoint = points[points.length - 1];
+
+        // Create color gradient
+        const colorGradientId = `color-gradient-${gradientCounter}`;
+        const colorGradient = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
+        colorGradient.setAttribute('id', colorGradientId);
+        colorGradient.setAttribute('gradientUnits', 'userSpaceOnUse');
+        colorGradient.setAttribute('x1', startPoint.left);
+        colorGradient.setAttribute('y1', startPoint.top);
+        colorGradient.setAttribute('x2', endPoint.left);
+        colorGradient.setAttribute('y2', endPoint.top);
+        colorGradient.innerHTML = `
+            <stop offset="0%" stop-color="${color}" stop-opacity="0" />
+            <stop offset="100%" stop-color="${color}" stop-opacity="1" />
+        `;
+        defs.appendChild(colorGradient);
+
+        // Create white outline gradient
+        const whiteGradientId = `white-gradient-${gradientCounter}`;
+        const whiteGradient = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
+        whiteGradient.setAttribute('id', whiteGradientId);
+        whiteGradient.setAttribute('gradientUnits', 'userSpaceOnUse');
+        whiteGradient.setAttribute('x1', startPoint.left);
+        whiteGradient.setAttribute('y1', startPoint.top);
+        whiteGradient.setAttribute('x2', endPoint.left);
+        whiteGradient.setAttribute('y2', endPoint.top);
+        whiteGradient.innerHTML = `
+            <stop offset="0%" stop-color="white" stop-opacity="0" />
+            <stop offset="100%" stop-color="white" stop-opacity="1" />
+        `;
+        defs.appendChild(whiteGradient);
+
+        // White outline
+        const outlinePath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        outlinePath.setAttribute('d', pathData);
+        outlinePath.setAttribute('stroke', `url(#${whiteGradientId})`);
+        outlinePath.setAttribute('stroke-width', '1.5');
+        outlinePath.setAttribute('fill', 'none');
+        outlinePath.setAttribute('stroke-linecap', 'round');
+        svg.appendChild(outlinePath);
+
+        // Colored line
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', pathData);
+        path.setAttribute('stroke', `url(#${colorGradientId})`);
+        path.setAttribute('stroke-width', '0.5');
+        path.setAttribute('fill', 'none');
+        path.setAttribute('stroke-linecap', 'round');
+        svg.appendChild(path);
+
+        gradientCounter++;
       }
 
       // Only render dot+label for the last entry in the group
-      const last = groupEntries[groupEntries.length - 1];
-      const { left, top } = coordToPercent(last.x, last.y);
-      const point = document.createElement('div');
-      point.className = 'point';
-      point.style.left = `${left}%`;
-      point.style.top = `${top}%`;
-      point.innerHTML = `<span class="dot shape-${shape}" style="background:${color};"></span><span class="label">${escapeHtml(name)}</span>`;
-      meter.appendChild(point);
+      if (groupEntries.length > 0) {
+        const last = groupEntries[groupEntries.length - 1];
+        const { left, top } = coordToPercent(last.x, last.y);
+        const point = document.createElement('div');
+        point.className = 'point';
+        point.style.left = `${left}%`;
+        point.style.top = `${top}%`;
+        point.innerHTML = `<span class="dot shape-${shape}" style="background:${color};"></span><span class="label">${escapeHtml(name)}</span>`;
+        meter.appendChild(point);
+      }
     });
 
     // Render entries list (same filter as meter)
     entriesList.innerHTML = '';
-    noEntries.style.display = entries.length === 0 ? '' : 'none';
+    noEntries.style.display = meterEntries.length === 0 ? '' : 'none';
     meterEntries.forEach(entry => {
       const li = document.createElement('li');
       const prefs = currentPrefs[entry.name];
@@ -1041,6 +1156,7 @@
     currentEntries = data
       ? Object.entries(data).map(([key, val]) => ({ ...val, _key: key }))
       : [];
+    currentEntries.sort((a,b) => new Date(a.date) - new Date(b.date)); // Sort by date
     renderAll(currentEntries);
   });
 
